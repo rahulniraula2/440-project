@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "heap.h"
+#include "util.h"
+
 // In the report talk about why we are using 1 byte sizes - reason: exponential growth of memory
 #define MAX_CHARACTERS 256
 
@@ -8,15 +11,9 @@ int frequency_table[MAX_CHARACTERS] = {};
 
 char* file_to_encode = "src/resources/obama.txt";
 
-void FATAL_ERROR(char* error_message){
-    printf("FATAL ERROR: %s\n", error_message);
-    printf("EXITING\n");
-    exit(1);
-}
-
 FILE* open_file(char* file){
     FILE* f = fopen(file, "r");
-    if (f == NULL) FATAL_ERROR("Couldn't open the specified file");
+    FATAL_IF_NULL(f, "Couldn't open the specified file");
     return f;
 }
 
@@ -48,7 +45,6 @@ int main()
     FILE* f = open_file(file_to_encode);
 
     count_character_frequencies(f, frequency_table);
-    
     
     fclose(f);
     return 0;
