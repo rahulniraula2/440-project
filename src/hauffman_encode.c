@@ -1,4 +1,4 @@
-#include "heap.h"
+#include "hauffman_encode.h"
 
 #include <stdio.h>
 #include "util.h"
@@ -14,9 +14,11 @@ void insert_node(heap *h, heap_node node);
 heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node);
 int get_min_child(heap *h, int index);
 void bubble_down(heap *h, int index);
+heap_node* pop_root(heap* h);
+void insert(heap* h, char c, int frequency);
+
 
 // Huffman tree functions
-
 void printArr(int arr[], int n)
 {
     int i;
@@ -26,7 +28,8 @@ void printArr(int arr[], int n)
     printf("\n");
 }
 
-void printCodes(struct heap_node *root, int arr[],
+// printCodes Taken from https: // www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
+void printCodes(heap_node *root, int arr[],
                 int top)
 
 {
@@ -50,9 +53,14 @@ void printCodes(struct heap_node *root, int arr[],
     if (root->left == NULL && root->right == NULL)
     {
 
-        printf("%c: ", root->c);
+        printf("%hhx: ", root->c);
         printArr(arr, top);
     }
+}
+
+void print_hauffman_codes(heap* h){    
+    int arr[100], top = 0;
+    printCodes(h->root, arr, top);
 }
 
 void initialize_heap(heap *h)
@@ -72,8 +80,7 @@ void create_huffman_tree(heap *h)
     {
         heap_node *left = pop_root(h);
         heap_node *right = pop_root(h);
-
-        heap_node parent = {left->frequency + right->frequency, '\0', left, right};
+        heap_node parent = {left->frequency + right->frequency, EOF, left, right};
         insert_node(h, parent);
     }
 }
@@ -114,21 +121,20 @@ void bubble_up(heap_node *root, int index)
     }
 }
 
-void heapify(heap *h, int frequency_table[256])
-{
-    initialize_heap(h);
+void insert_all_from_frequency_table(heap *h, int frequency_table[256]){
     for (int i = 0; i < 256; i++)
     {
         int frequency = frequency_table[i];
         if (frequency)
             insert(h, (char)i, frequency);
     }
-    printf("Heapified\n");
+}
 
+void generate_hauffman_tree(heap *h, int frequency_table[256])
+{
+    initialize_heap(h);
+    insert_all_from_frequency_table(h, frequency_table);
     create_huffman_tree(h);
-
-    int arr[100], top = 0;
-    printCodes(h->root, arr, top);
 }
 
 void insert_node(heap *h, heap_node node)
@@ -144,11 +150,6 @@ void insert(heap *h, char c, int frequency)
 {
     heap_node hn = {frequency, c, NULL, NULL};
     insert_node(h, hn);
-}
-
-heap_node peek_root(heap *h)
-{
-    return *(h->root);
 }
 
 heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node)

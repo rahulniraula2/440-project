@@ -1,5 +1,5 @@
-#ifndef MIN_HEAP_H
-#define MIN_HEAP_H
+#ifndef HAUFFMAN_ENCODE_H
+#define HAUFFMAN_ENCODE_H
 
 #define MAX_CAPACITY_HEAP 512
 
@@ -18,9 +18,11 @@ typedef struct heap
     int back_size;
 } heap;
 
-void heapify(heap *h, int *frequency_table);
-void insert(heap *h, char c, int frequency);
-heap_node peek_root(heap *h);
-heap_node *pop_root(heap *h);
+//Export 256 to a config file
+void generate_hauffman_tree(heap* h, int frequency_table[256]);
+void print_hauffman_codes(heap* h);
+
+
+
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include "heap.h"
+#include "hauffman_encode.h"
 
 void FATAL_ERROR(char *error_message);
 

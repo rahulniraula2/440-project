@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "heap.h"
+#include "hauffman_encode.h"
 #include "util.h"
 
 // In the report talk about why we are using 1 byte sizes - reason: exponential growth of memory
@@ -55,10 +55,10 @@ int main()
 
     heap h;
 
-    heapify(&h, frequency_table);
-
-    printf("Size of the heap is %d\n", h.size);
-    printf("Min element in the heap is for %02hhx, with count %d\n", peek_root(&h).c, peek_root(&h).frequency);
+    generate_hauffman_tree(&h, frequency_table);
+    print_hauffman_codes(&h);
+    
+    
     fclose(f);
     return 0;
 }
