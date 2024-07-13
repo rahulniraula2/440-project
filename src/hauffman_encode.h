@@ -20,9 +20,6 @@ typedef struct heap
 
 //Export 256 to a config file
 void generate_hauffman_tree(heap* h, int frequency_table[256]);
-void print_hauffman_codes(heap* h);
-
-
 
 
 #endif

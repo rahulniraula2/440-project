@@ -17,52 +17,6 @@ void bubble_down(heap *h, int index);
 heap_node* pop_root(heap* h);
 void insert(heap* h, char c, int frequency);
 
-
-// Huffman tree functions
-void printArr(int arr[], int n)
-{
-    int i;
-    for (i = 0; i < n; ++i)
-        printf("%d", arr[i]);
-
-    printf("\n");
-}
-
-// printCodes Taken from https: // www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
-void printCodes(heap_node *root, int arr[],
-                int top)
-
-{
-
-    // Assign 0 to left edge and recur
-    if (root->left)
-    {
-
-        arr[top] = 0;
-        printCodes(root->left, arr, top + 1);
-    }
-
-    // Assign 1 to right edge and recur
-    if (root->right)
-    {
-
-        arr[top] = 1;
-        printCodes(root->right, arr, top + 1);
-    }
-
-    if (root->left == NULL && root->right == NULL)
-    {
-
-        printf("%hhx: ", root->c);
-        printArr(arr, top);
-    }
-}
-
-void print_hauffman_codes(heap* h){    
-    int arr[100], top = 0;
-    printCodes(h->root, arr, top);
-}
-
 void initialize_heap(heap *h)
 {
     for (int i = 0; i < MAX_CAPACITY_HEAP; i++)
