@@ -3,68 +3,202 @@
 #include <stdio.h>
 #include "util.h"
 
+// Forward declarations
+void create_huffman_tree(heap *h);
+int parent(int index);
+int left_child(int index);
+int right_child(int index);
+void swap(heap_node *root, int i1, int i2);
+void bubble_up(heap_node *root, int index);
+void insert_node(heap *h, heap_node node);
+heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node);
+int get_min_child(heap *h, int index);
+void bubble_down(heap *h, int index);
 
-int parent(int index){
-    return index / 2;
+// Huffman tree functions
+
+void printArr(int arr[], int n)
+{
+    int i;
+    for (i = 0; i < n; ++i)
+        printf("%d", arr[i]);
+
+    printf("\n");
 }
 
-int left_child(int index){
-    return index*2;
-}
+void printCodes(struct heap_node *root, int arr[],
+                int top)
 
-int right_child(int index){
-    return index*2 + 1;
-}
+{
 
-int swap_if_less_than(heap_node* root, int index_parent, int index_child){
-    heap_node temp = root[index_parent];
-    if(temp.frequency > root[index_child].frequency){
-	root[index_parent].frequency = root[index_child].frequency;
-	root[index_parent].c = root[index_child].c;
-	root[index_child].frequency = temp.frequency;
-	root[index_child].c = temp.c;
-	return 1;
+    // Assign 0 to left edge and recur
+    if (root->left)
+    {
+
+        arr[top] = 0;
+        printCodes(root->left, arr, top + 1);
     }
-    return 0;
-} 
 
-void bubble_up(heap_node* root, int index){
+    // Assign 1 to right edge and recur
+    if (root->right)
+    {
 
-    if (index == 0) return;
+        arr[top] = 1;
+        printCodes(root->right, arr, top + 1);
+    }
+
+    if (root->left == NULL && root->right == NULL)
+    {
+
+        printf("%c: ", root->c);
+        printArr(arr, top);
+    }
+}
+
+void initialize_heap(heap *h)
+{
+    for (int i = 0; i < MAX_CAPACITY_HEAP; i++)
+    {
+        heap_node empty = {0, '\0', NULL, NULL};
+        h->root[i] = empty;
+    }
+    h->size = 0;
+    h->back_size = 0;
+}
+
+void create_huffman_tree(heap *h)
+{
+    while (h->size > 1)
+    {
+        heap_node *left = pop_root(h);
+        heap_node *right = pop_root(h);
+
+        heap_node parent = {left->frequency + right->frequency, '\0', left, right};
+        insert_node(h, parent);
+    }
+}
+
+int parent(int index)
+{
+    return (index - 1) / 2;
+}
+
+int left_child(int index)
+{
+    return (index * 2) + 1;
+}
+
+int right_child(int index)
+{
+    return (index * 2) + 2;
+}
+
+void swap(heap_node *root, int i1, int i2)
+{
+    heap_node temp = root[i1];
+    root[i1] = root[i2];
+    root[i2] = temp;
+}
+
+void bubble_up(heap_node *root, int index)
+{
+    if (index == 0)
+        return;
 
     int parent_index = parent(index);
 
-    if (swap_if_less_than(root, parent_index, index))
-	bubble_up(root, parent_index);
-}
-
-void heapify(heap* h, int frequency_table[256]){
-
-    h->size = 0;
-    
-    for (int i = 0; i < 256; i++) {
-	int frequency = frequency_table[i];
-	if (frequency) insert(h, (char)i, frequency);  
+    if (root[parent_index].frequency > root[index].frequency)
+    {
+        swap(root, parent_index, index);
+        bubble_up(root, parent_index);
     }
 }
 
-void insert(heap* h, char c, int frequency){
-    
+void heapify(heap *h, int frequency_table[256])
+{
+    initialize_heap(h);
+    for (int i = 0; i < 256; i++)
+    {
+        int frequency = frequency_table[i];
+        if (frequency)
+            insert(h, (char)i, frequency);
+    }
+    printf("Heapified\n");
+
+    create_huffman_tree(h);
+
+    int arr[100], top = 0;
+    printCodes(h->root, arr, top);
+}
+
+void insert_node(heap *h, heap_node node)
+{
+    if (h->size == MAX_CAPACITY_HEAP)
+        FATAL_ERROR("Heap overflow");
     int size = h->size++;
-    if(size == MAX_CAPACITY_HEAP) FATAL_ERROR("Heap overflow");
-    
-    h->root[size].frequency = frequency;
-    h->root[size].c = c;
+    h->root[size] = node;
     bubble_up(h->root, size);
 }
 
-heap_node peek_root(heap* h){
-    return h->root[0];
+void insert(heap *h, char c, int frequency)
+{
+    heap_node hn = {frequency, c, NULL, NULL};
+    insert_node(h, hn);
 }
 
-heap_node pop_root(heap* h){
-    heap_node hn = {};
-    FATAL_ERROR("Function not implemented");
-    return hn;
+heap_node peek_root(heap *h)
+{
+    return *(h->root);
 }
 
+heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node)
+{
+    int back_size = h->back_size++;
+    int index = MAX_CAPACITY_HEAP - back_size - 1;
+    if (index < h->size)
+        FATAL_ERROR("Back size overflow");
+    h->root[index] = node;
+    return &(h->root[index]);
+}
+
+int get_min_child(heap *h, int index)
+{
+    int leftIndex = left_child(index);
+    int rightIndex = right_child(index);
+    int size = h->size;
+    heap_node *root = h->root;
+
+    if (leftIndex >= size)
+        return -1;
+
+    if (rightIndex >= size)
+        return leftIndex;
+
+    return root[leftIndex].frequency < root[rightIndex].frequency ? leftIndex : rightIndex;
+}
+
+void bubble_down(heap *h, int index)
+{
+    int min_child = get_min_child(h, index);
+    if (min_child == -1)
+        return;
+
+    if (h->root[min_child].frequency < h->root[index].frequency)
+    {
+        swap(h->root, index, min_child);
+        bubble_down(h, min_child);
+    }
+}
+
+heap_node *pop_root(heap *h)
+{
+    if (h->size == 0)
+        FATAL_ERROR("Heap underflow");
+
+    heap_node root = *h->root;
+    int size = --h->size;
+    heap_node last = h->root[size];
+    *h->root = last;
+    bubble_down(h, 0);
+    return insert_node_to_the_back_of_the_pool(h, root);
+}
