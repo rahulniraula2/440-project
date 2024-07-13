@@ -9,7 +9,7 @@
 
 int frequency_table[MAX_CHARACTERS] = {};
 
-char *file_to_encode = "src/resources/obama.txt";
+char *file_to_encode = "src/resources/big.txt";
 
 FILE *open_file(char *file)
 {
@@ -57,8 +57,6 @@ int main()
 
     generate_hauffman_tree(&h, frequency_table);
     print_hauffman_codes(&h);
-    
-    
     fclose(f);
     return 0;
 }

@@ -1,21 +1,33 @@
 #include "hauffman_encode.h"
-
 #include <stdio.h>
 #include "util.h"
 
-// Forward declarations
-void create_huffman_tree(heap *h);
+// ========================= FUNCTION DECLARATIONS =========================
+
+// Heap Operations
+void insert(heap *h, char c, int frequency);
+void insert_node(heap *h, heap_node node);
+heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node);
+heap_node *pop_root(heap *h);
+
+// Helper Functions
 int parent(int index);
 int left_child(int index);
 int right_child(int index);
-void swap(heap_node *root, int i1, int i2);
 void bubble_up(heap_node *root, int index);
-void insert_node(heap *h, heap_node node);
-heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node);
-int get_min_child(heap *h, int index);
 void bubble_down(heap *h, int index);
-heap_node* pop_root(heap* h);
-void insert(heap* h, char c, int frequency);
+void swap(heap_node *root, int i1, int i2);
+int get_min_child(heap *h, int index);
+
+// Huffman Encoding
+void create_huffman_tree(heap *h);
+void insert_all_from_frequency_table(heap *h, int frequency_table[256]);
+void generate_hauffman_tree(heap *h, int frequency_table[256]);
+
+// Heap Initialization
+void initialize_heap(heap *h);
+
+// ========================= HEAP INITIALIZATION =========================
 
 void initialize_heap(heap *h)
 {
@@ -28,16 +40,47 @@ void initialize_heap(heap *h)
     h->back_size = 0;
 }
 
-void create_huffman_tree(heap *h)
+// ========================= HEAP OPERATIONS =========================
+
+void insert(heap *h, char c, int frequency)
 {
-    while (h->size > 1)
-    {
-        heap_node *left = pop_root(h);
-        heap_node *right = pop_root(h);
-        heap_node parent = {left->frequency + right->frequency, EOF, left, right};
-        insert_node(h, parent);
-    }
+    heap_node hn = {frequency, c, NULL, NULL};
+    insert_node(h, hn);
 }
+
+void insert_node(heap *h, heap_node node)
+{
+    if (h->size == MAX_CAPACITY_HEAP)
+        FATAL_ERROR("Heap overflow");
+    int size = h->size++;
+    h->root[size] = node;
+    bubble_up(h->root, size);
+}
+
+heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node)
+{
+    int back_size = h->back_size++;
+    int index = MAX_CAPACITY_HEAP - back_size - 1;
+    if (index < h->size)
+        FATAL_ERROR("Back size overflow");
+    h->root[index] = node;
+    return &(h->root[index]);
+}
+
+heap_node *pop_root(heap *h)
+{
+    if (h->size == 0)
+        FATAL_ERROR("Heap underflow");
+
+    heap_node root = *h->root;
+    int size = --h->size;
+    heap_node last = h->root[size];
+    *h->root = last;
+    bubble_down(h, 0);
+    return insert_node_to_the_back_of_the_pool(h, root);
+}
+
+// ========================= HEAP HELPER FUNCTIONS =========================
 
 int parent(int index)
 {
@@ -75,47 +118,6 @@ void bubble_up(heap_node *root, int index)
     }
 }
 
-void insert_all_from_frequency_table(heap *h, int frequency_table[256]){
-    for (int i = 0; i < 256; i++)
-    {
-        int frequency = frequency_table[i];
-        if (frequency)
-            insert(h, (char)i, frequency);
-    }
-}
-
-void generate_hauffman_tree(heap *h, int frequency_table[256])
-{
-    initialize_heap(h);
-    insert_all_from_frequency_table(h, frequency_table);
-    create_huffman_tree(h);
-}
-
-void insert_node(heap *h, heap_node node)
-{
-    if (h->size == MAX_CAPACITY_HEAP)
-        FATAL_ERROR("Heap overflow");
-    int size = h->size++;
-    h->root[size] = node;
-    bubble_up(h->root, size);
-}
-
-void insert(heap *h, char c, int frequency)
-{
-    heap_node hn = {frequency, c, NULL, NULL};
-    insert_node(h, hn);
-}
-
-heap_node *insert_node_to_the_back_of_the_pool(heap *h, heap_node node)
-{
-    int back_size = h->back_size++;
-    int index = MAX_CAPACITY_HEAP - back_size - 1;
-    if (index < h->size)
-        FATAL_ERROR("Back size overflow");
-    h->root[index] = node;
-    return &(h->root[index]);
-}
-
 int get_min_child(heap *h, int index)
 {
     int leftIndex = left_child(index);
@@ -145,15 +147,34 @@ void bubble_down(heap *h, int index)
     }
 }
 
-heap_node *pop_root(heap *h)
-{
-    if (h->size == 0)
-        FATAL_ERROR("Heap underflow");
+// ========================= HUFFMAN TREE CREATION =========================
 
-    heap_node root = *h->root;
-    int size = --h->size;
-    heap_node last = h->root[size];
-    *h->root = last;
-    bubble_down(h, 0);
-    return insert_node_to_the_back_of_the_pool(h, root);
+void create_huffman_tree(heap *h)
+{
+    while (h->size > 1)
+    {
+        heap_node *left = pop_root(h);
+        heap_node *right = pop_root(h);
+        heap_node parent = {left->frequency + right->frequency, EOF, left, right};
+        insert_node(h, parent);
+    }
+}
+
+// ========================= FREQUENCY TABLE HANDLING =========================
+
+void insert_all_from_frequency_table(heap *h, int frequency_table[256])
+{
+    for (int i = 0; i < 256; i++)
+    {
+        int frequency = frequency_table[i];
+        if (frequency)
+            insert(h, (char)i, frequency);
+    }
+}
+
+void generate_hauffman_tree(heap *h, int frequency_table[256])
+{
+    initialize_heap(h);
+    insert_all_from_frequency_table(h, frequency_table);
+    create_huffman_tree(h);
 }
