@@ -40,12 +40,30 @@ void output_frequency_table(int frequency_table[MAX_CHARACTERS]){
     }
 }
 
+
+void print_heap(heap* h){
+    printf("[");
+    for (int i = 0; i < h->size; i++){
+	printf("\"%02xxh:%d\", ", h->root[i].c, h->root[i].frequency);
+    }
+    printf("]\n");	     
+}
+
+
 int main()
 {
     FILE* f = open_file(file_to_encode);
 
     count_character_frequencies(f, frequency_table);
-    
+
+    heap h;
+
+    heapify(&h, frequency_table);
+
+    printf("Size of the heap is %d\n", h.size);
+    printf("Min element in the heap is for %02hhx, with count %d\n", peek_root(&h).c, peek_root(&h).frequency);
+
+    print_heap(&h);
     fclose(f);
     return 0;
 }
