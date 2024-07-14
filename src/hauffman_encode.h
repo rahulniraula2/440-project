@@ -2,6 +2,7 @@
 #define HAUFFMAN_ENCODE_H
 
 #define MAX_CAPACITY_HEAP 512
+#include <stdio.h>
 
 typedef struct heap_node
 {
@@ -18,8 +19,15 @@ typedef struct heap
     int back_size;
 } heap;
 
+typedef struct coder
+{
+    unsigned int code;
+    unsigned int length;
+} coder;
+
 //Export 256 to a config file
 void generate_hauffman_tree(heap* h, int frequency_table[256]);
-
+void generate_lookup_tables(heap* h, coder lookup_table[256]);
+void encode_input_with_tree(heap* h, coder lookup_table[256], FILE* input_file, FILE* output_file);
 
 #endif

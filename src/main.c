@@ -7,7 +7,7 @@
 // In the report talk about why we are using 1 byte sizes - reason: exponential growth of memory
 #define MAX_CHARACTERS 256
 
-int frequency_table[MAX_CHARACTERS] = {};
+int frequency_table[MAX_CHARACTERS] = {0};
 
 char *file_to_encode = "src/resources/big.txt";
 
@@ -50,13 +50,19 @@ void output_frequency_table(int frequency_table[MAX_CHARACTERS])
 int main()
 {
     FILE *f = open_file(file_to_encode);
-
     count_character_frequencies(f, frequency_table);
+    fclose(f);
 
     heap h;
-
     generate_hauffman_tree(&h, frequency_table);
     print_hauffman_codes(&h);
-    fclose(f);
+
+    coder lookup_table[256] = {0};
+    generate_lookup_tables(&h, lookup_table);
+
+    f = open_file(file_to_encode);
+    FILE *output = fopen("output.bin", "wb");
+    encode_input_with_tree(&h, lookup_table, f, output);
+
     return 0;
 }
