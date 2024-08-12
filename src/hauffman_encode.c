@@ -346,10 +346,10 @@ uint32_t precompute_result(heap *h, uint32_t pattern)
     return ret;
 }
 
-void generate_precomputed_chars(heap *h, uint32_t array[1024])
+void generate_precomputed_chars(heap *h, uint32_t array[512])
 {
 
-    for (uint32_t i = 0; i < 1024; i++)
+    for (uint32_t i = 0; i < 512; i++)
     {
         array[i] = precompute_result(h, i);
     }
@@ -395,61 +395,48 @@ uint32_t lookup_using_tree(heap *h, uint32_t buffer, uint32_t buffer_count)
     return pattern_count;
 }
 
-void decode_input_with_lookup(heap *h, uint32_t array[1024], FILE *input_file)
+void decode_input_with_lookup(heap *restrict h, uint32_t *restrict array, FILE *restrict input_file)
 {
     uint32_t buffer = 0;
     uint32_t buffer_count = 0;
 
-    uint32_t c;
+    const uint32_t bitmask_9bit = 0x1FF; // 9-bit mask (0b111111111)
 
-    c = fgetc(input_file);
-
+    uint32_t c = fgetc(input_file);
     while (c != EOF)
     {
-        if (buffer_count <= 24)
+        buffer = (buffer << 8) | c;
+        buffer_count += 8;
+        c = fgetc(input_file);
+
+        while (buffer_count >= 9)
         {
-            buffer = (buffer << 8) | c;
-            buffer_count += 8;
-            c = fgetc(input_file);
-        }
+            uint32_t pattern = (buffer >> (buffer_count - 9)) & bitmask_9bit;
 
-        // printf("Buffer: %u, Buffer Count: %u\n", buffer, buffer_count);
+            // Use the lookup table
+            uint32_t cached = array[pattern];
 
-        if (buffer_count >= 9)
-        {
-            uint32_t pattern = buffer >> (buffer_count - 9) & 0b111111111;
-
-            if (pattern > 1023)
-            {
-                printf("Pattern: %u\n", pattern);
-                FATAL_ERROR("Invalid pattern");
-            }
-
-            uint32_t decoded = array[pattern];
-
-            uint32_t c_count = (decoded >> 24) & 0b11;
-
+            uint32_t c_count = (cached >> 24) & 0b11;
             if (c_count == 0)
             {
+                // fallback to the tree
                 if (buffer_count > 24)
                 {
                     uint32_t read_bits = lookup_using_tree(h, buffer, buffer_count);
                     buffer_count -= read_bits;
                 }
+                break; // Break to load more bits
             }
             else
             {
-                char c[3] = {};
-                c[0] = (decoded >> 16) & 0xFF;
-                c[1] = (decoded >> 8) & 0xFF;
-                c[2] = (decoded & 0xFF);
+                if (c_count >= 1)
+                    printf("%c", (char)((cached >> 16) & 0xFF));
+                if (c_count >= 2)
+                    printf("%c", (char)((cached >> 8) & 0xFF));
+                if (c_count == 3)
+                    printf("%c", (char)(cached & 0xFF));
 
-                for (int i = 0; i < c_count; i++)
-                {
-                    printf("%c", c[i]);
-                }
-
-                uint32_t pattern_count = (decoded >> 26);
+                uint32_t pattern_count = (cached >> 26);
                 buffer_count -= pattern_count;
             }
         }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "hauffman_encode.h"
 #include "util.h"
@@ -66,11 +67,18 @@ int main()
     fclose(output);
     fclose(f);
 
-    uint32_t array[1024] = {};
+    uint32_t array[512] = {};
     generate_precomputed_chars(&h, array);
 
     FILE *encoded_file = fopen("output.bin", "r");
+
+    clock_t start_time = clock();
     decode_input_with_lookup(&h, array, encoded_file);
+    clock_t end_time = clock();
+
+    double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("\nTime taken for decode_input_with_lookup: %f seconds\n", elapsed_time);
+
     fclose(encoded_file);
 
     return 0;
