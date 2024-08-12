@@ -2,7 +2,7 @@
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -g
 ASMFLAGS = -S
 
 # Optimization flag default

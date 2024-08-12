@@ -1,8 +1,11 @@
 #ifndef HAUFFMAN_ENCODE_H
+
 #define HAUFFMAN_ENCODE_H
 
 #define MAX_CAPACITY_HEAP 512
+
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct heap_node
 {
@@ -29,5 +32,8 @@ typedef struct coder
 void generate_hauffman_tree(heap* h, int frequency_table[256]);
 void generate_lookup_tables(heap* h, coder lookup_table[256]);
 void encode_input_with_tree(heap* h, coder lookup_table[256], FILE* input_file, FILE* output_file);
+void generate_precomputed_chars(heap* h, uint32_t array[1024]);
+
+void decode_input_with_lookup(heap* h, uint32_t array[1024], FILE* input_file);
 
 #endif

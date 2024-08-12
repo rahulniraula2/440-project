@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "hauffman_encode.h"
 #include "util.h"
@@ -55,7 +56,6 @@ int main()
 
     heap h;
     generate_hauffman_tree(&h, frequency_table);
-    print_hauffman_codes(&h);
 
     coder lookup_table[256] = {0};
     generate_lookup_tables(&h, lookup_table);
@@ -63,6 +63,15 @@ int main()
     f = open_file(file_to_encode);
     FILE *output = fopen("output.bin", "wb");
     encode_input_with_tree(&h, lookup_table, f, output);
+    fclose(output);
+    fclose(f);
+
+    uint32_t array[1024] = {};
+    generate_precomputed_chars(&h, array);
+
+    FILE *encoded_file = fopen("output.bin", "r");
+    decode_input_with_lookup(&h, array, encoded_file);
+    fclose(encoded_file);
 
     return 0;
 }
