@@ -11,7 +11,7 @@
 
 int frequency_table[MAX_CHARACTERS] = {0};
 
-char *file_to_encode = "src/resources/obama.txt";
+char *file_to_encode = "src/resources/big.txt";
 
 FILE *open_file(char *file)
 {
