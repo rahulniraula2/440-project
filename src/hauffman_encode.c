@@ -276,14 +276,15 @@ void encode_input_with_tree(heap *h, coder lookup_table[256], FILE *input, FILE 
         write_bits(output_file, &buffer, &bit_count, code.code, code.length);
     }
 
-    // Write the remaining bits in the buffer if any
+    coder end_of_text = lookup_table[0x03];
+    printcoder(end_of_text);
+    write_bits(output_file, &buffer, &bit_count, end_of_text.code, end_of_text.length);
+
     if (bit_count > 0)
     {
-        fwrite(&buffer, 1, 8 / bit_count, output_file);
+        buffer = buffer << (8 - bit_count);
+        fwrite(&buffer, 1, 1, output_file);
     }
-
-    char end_of_text = 0xF3;
-    fwrite(&end_of_text, 1, 1, output_file);
 }
 
 void heap_get_char(heap *h, heap_node *hn, uint32_t pattern, uint32_t pos, uint32_t *pattern_count, uint32_t p_buffer, uint32_t *c_count, char c[3])
@@ -361,7 +362,7 @@ char lookup_using_tree_helper(heap_node *hn, uint32_t pattern, uint32_t pos, uin
 
     if (!pos)
     {
-        FATAL_ERROR("Ran out of bits to decode");
+        FATAL_ERROR("Reached end of pattern");
     }
 
     if (hn->left == NULL && hn->right == NULL)
@@ -391,6 +392,10 @@ uint32_t lookup_using_tree(heap *h, uint32_t buffer, uint32_t buffer_count)
     uint32_t pos = 1 << (buffer_count - 1);
     uint32_t pattern_count = 0;
     char c = lookup_using_tree_helper(h->root, buffer, pos, &pattern_count);
+    if (c == 0x03)
+    {
+        return -1;
+    }
     printf("%c", c);
     return pattern_count;
 }
@@ -420,10 +425,14 @@ void decode_input_with_lookup(heap *restrict h, uint32_t *restrict array, FILE *
             if (c_count == 0)
             {
                 // fallback to the tree
-                if (buffer_count > 24)
+                if (buffer_count >= 21)
                 {
                     uint32_t read_bits = lookup_using_tree(h, buffer, buffer_count);
                     buffer_count -= read_bits;
+                    if (read_bits == -1)
+                    {
+                        return;
+                    }
                 }
                 break; // Break to load more bits
             }
@@ -440,6 +449,16 @@ void decode_input_with_lookup(heap *restrict h, uint32_t *restrict array, FILE *
                 buffer_count -= pattern_count;
             }
         }
+    }
+
+    while (buffer_count > 0)
+    {
+        uint32_t read_bits = lookup_using_tree(h, buffer, buffer_count);
+        if (read_bits == -1)
+        {
+            return;
+        }
+        buffer_count -= read_bits;
     }
 }
 
@@ -458,7 +477,6 @@ void decode_input_with_tree_only(heap *h, FILE *input_file)
         while (buffer_count > 21)
         {
             heap_node *current_node = h->root;
-            uint32_t bits_used = 0;
 
             while (current_node->left != NULL || current_node->right != NULL)
             {
@@ -469,7 +487,6 @@ void decode_input_with_tree_only(heap *h, FILE *input_file)
 
                 uint32_t next_bit = (buffer >> (buffer_count - 1)) & 1;
                 buffer_count--;
-                bits_used++;
 
                 if (next_bit == 0)
                 {
@@ -488,7 +505,6 @@ void decode_input_with_tree_only(heap *h, FILE *input_file)
             else
             {
                 break;
-                z
             }
         }
     }

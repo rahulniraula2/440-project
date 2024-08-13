@@ -6,7 +6,7 @@ CFLAGS = -Wall -g
 ASMFLAGS = -S
 
 # Optimization flag default
-OPTIMIZATION = -O2
+OPTIMIZATION = -O3
 
 # Source and target directories
 SRC_DIR = src

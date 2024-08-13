@@ -11,7 +11,7 @@
 
 int frequency_table[MAX_CHARACTERS] = {0};
 
-char *file_to_encode = "src/resources/big.txt";
+char *file_to_encode = "src/resources/obama.txt";
 
 FILE *open_file(char *file)
 {
@@ -39,6 +39,8 @@ void count_character_frequencies(FILE *f, int frequency_table[MAX_CHARACTERS])
         frequency_table[index]++;
         c = getc(f);
     }
+
+    frequency_table[0x03] = 1;
 }
 
 void output_frequency_table(int frequency_table[MAX_CHARACTERS])
