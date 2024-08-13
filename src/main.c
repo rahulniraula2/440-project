@@ -32,7 +32,7 @@ void output_file(FILE *f)
 
 void count_character_frequencies(FILE *f, int frequency_table[MAX_CHARACTERS])
 {
-    char c = getc(f);
+    int c = getc(f);
     while (c != EOF)
     {
         int index = (int)c;
