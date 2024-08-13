@@ -34,6 +34,7 @@ void generate_lookup_tables(heap *h, coder lookup_table[256]);
 void encode_input_with_tree(heap *h, coder lookup_table[256], FILE *input_file, FILE *output_file);
 void generate_precomputed_chars(heap *h, uint32_t array[512]);
 
-void decode_input_with_lookup(heap *h, uint32_t array[512], FILE *input_file);
+void decode_input_with_lookup(heap *restrict h, uint32_t *restrict array, FILE *restrict input_file);
+void decode_input_with_tree_only(heap *h, FILE *input_file);
 
 #endif

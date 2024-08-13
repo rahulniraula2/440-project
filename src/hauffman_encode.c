@@ -442,3 +442,54 @@ void decode_input_with_lookup(heap *restrict h, uint32_t *restrict array, FILE *
         }
     }
 }
+
+void decode_input_with_tree_only(heap *h, FILE *input_file)
+{
+    uint32_t buffer = 0;
+    uint32_t buffer_count = 0;
+
+    uint32_t c = fgetc(input_file);
+    while (c != EOF)
+    {
+        buffer = (buffer << 8) | c;
+        buffer_count += 8;
+        c = fgetc(input_file);
+
+        while (buffer_count > 21)
+        {
+            heap_node *current_node = h->root;
+            uint32_t bits_used = 0;
+
+            while (current_node->left != NULL || current_node->right != NULL)
+            {
+                if (buffer_count == 0)
+                {
+                    break;
+                }
+
+                uint32_t next_bit = (buffer >> (buffer_count - 1)) & 1;
+                buffer_count--;
+                bits_used++;
+
+                if (next_bit == 0)
+                {
+                    current_node = current_node->left;
+                }
+                else
+                {
+                    current_node = current_node->right;
+                }
+            }
+
+            if (current_node->left == NULL && current_node->right == NULL)
+            {
+                printf("%c", current_node->c);
+            }
+            else
+            {
+                break;
+                z
+            }
+        }
+    }
+}
