@@ -292,11 +292,8 @@ void heap_get_char(heap *h, heap_node *hn, uint32_t pattern, uint32_t pos, uint3
 
     if (*c_count > 3)
     {
-        // printf("OVERLOADED\n");
         return;
     }
-
-    // printf("Pattern: %u, c_count: %u, pattern_count: %u, c1: %c, c2: %c, c3: %c\n", pattern, *c_count, *pattern_count, c[0], c[1], c[2]);
 
     FATAL_IF_NULL(hn, "Heap Node was null -- when trying to precompute");
 
@@ -310,16 +307,8 @@ void heap_get_char(heap *h, heap_node *hn, uint32_t pattern, uint32_t pos, uint3
     if (!pos)
         return;
 
-    int tree_direction = pattern & pos;
-    heap_node *new_node;
-    if (tree_direction)
-    {
-        new_node = hn->right;
-    }
-    else
-    {
-        new_node = hn->left;
-    }
+    heap_node *new_node = pattern & pos ? hn->right : hn->left;
+
     p_buffer++;
 
     heap_get_char(h, new_node, pattern, pos >> 1, pattern_count, p_buffer, c_count, c);
@@ -343,7 +332,6 @@ uint32_t precompute_result(heap *h, uint32_t pattern)
     ret |= (c[0] << 16);
     ret |= (c[1] << 8);
     ret |= (c[2] << 0);
-    // printf("P: %u, c_count: %u, p_count: %u, c1: %c, c2: %c, c3: %c\n", pattern, c_count, pattern_count, c[0], c[1], c[2]);
     return ret;
 }
 
@@ -370,17 +358,7 @@ char lookup_using_tree_helper(heap_node *hn, uint32_t pattern, uint32_t pos, uin
         return hn->c;
     }
 
-    int tree_direction = pattern & pos;
-
-    heap_node *new_node;
-    if (tree_direction)
-    {
-        new_node = hn->right;
-    }
-    else
-    {
-        new_node = hn->left;
-    }
+    heap_node *new_node = pattern & pos ? hn->right : hn->left;
 
     (*pattern_count)++;
 
@@ -400,112 +378,71 @@ uint32_t lookup_using_tree(heap *h, uint32_t buffer, uint32_t buffer_count)
     return pattern_count;
 }
 
-void decode_input_with_lookup(heap *restrict h, uint32_t *restrict array, FILE *restrict input_file)
+inline uint32_t extract_characters_from_pre_computed_array(uint32_t pre_calulated_value, uint32_t c_count)
 {
-    uint32_t buffer = 0;
-    uint32_t buffer_count = 0;
+    if (c_count >= 1)
+        printf("%c", (char)((pre_calulated_value >> 16) & 0xFF));
+    if (c_count >= 2)
+        printf("%c", (char)((pre_calulated_value >> 8) & 0xFF));
+    if (c_count == 3)
+        printf("%c", (char)(pre_calulated_value & 0xFF));
 
-    const uint32_t bitmask_9bit = 0x1FF; // 9-bit mask (0b111111111)
+    return pre_calulated_value >> 26;
 
-    uint32_t c = fgetc(input_file);
-    while (c != EOF)
-    {
-        buffer = (buffer << 8) | c;
-        buffer_count += 8;
-        c = fgetc(input_file);
-
-        while (buffer_count >= 9)
-        {
-            uint32_t pattern = (buffer >> (buffer_count - 9)) & bitmask_9bit;
-
-            // Use the lookup table
-            uint32_t cached = array[pattern];
-
-            uint32_t c_count = (cached >> 24) & 0b11;
-            if (c_count == 0)
-            {
-                // fallback to the tree
-                if (buffer_count >= 21)
-                {
-                    uint32_t read_bits = lookup_using_tree(h, buffer, buffer_count);
-                    buffer_count -= read_bits;
-                    if (read_bits == -1)
-                    {
-                        return;
-                    }
-                }
-                break; // Break to load more bits
-            }
-            else
-            {
-                if (c_count >= 1)
-                    printf("%c", (char)((cached >> 16) & 0xFF));
-                if (c_count >= 2)
-                    printf("%c", (char)((cached >> 8) & 0xFF));
-                if (c_count == 3)
-                    printf("%c", (char)(cached & 0xFF));
-
-                uint32_t pattern_count = (cached >> 26);
-                buffer_count -= pattern_count;
-            }
-        }
-    }
-
-    while (buffer_count > 0)
-    {
-        uint32_t read_bits = lookup_using_tree(h, buffer, buffer_count);
-        if (read_bits == -1)
-        {
-            return;
-        }
-        buffer_count -= read_bits;
-    }
 }
 
-void decode_input_with_tree_only(heap *h, FILE *input_file)
+void decode_input_with_lookup(heap *restrict h, uint32_t *restrict array, FILE *restrict input_file)
 {
-    uint32_t buffer = 0;
-    uint32_t buffer_count = 0;
+    //Register to keep track of the buffer
+    register uint32_t buffer = 0;
+    register uint32_t buffer_count = 0;
+    const uint32_t bitmask_9bit = 0x1FF; // 9 LSB set to 1
 
     uint32_t c = fgetc(input_file);
-    while (c != EOF)
-    {
-        buffer = (buffer << 8) | c;
-        buffer_count += 8;
-        c = fgetc(input_file);
 
-        while (buffer_count > 21)
+    while (1)
+    {   
+        //Always ensure that the buffer has at least 21 bits 
+        //The end has 22 so we will always have enough bits
+        while (buffer_count <= 22){
+            buffer = (buffer << 8) | c;
+            buffer_count += 8;
+            c = fgetc(input_file);
+        }
+
+        //Extract the 9 bits from the buffer
+        uint32_t pattern = (buffer >> (buffer_count - 9)) & bitmask_9bit;
+        
+        //Get precomputed entry for the pattern
+        uint32_t pre_calulated_value = array[pattern];
+
+        //Checking the number of valid characters in the precomputed value
+        uint32_t c_count = (pre_calulated_value >> 24) & 0b11;
+
+        if (c_count > 0){
+            //INLINE FUNCTION: Extract the characters from the precomputed value - and return the number of bits usedup
+            uint32_t pattern_count = extract_characters_from_pre_computed_array(pre_calulated_value, c_count);
+            buffer_count -= pattern_count;
+        }
+
+        //if the pattern did not match any character
+        if (c_count == 0)
+        {   
+            // fallback to traversing the tree
+            uint32_t read_bits = lookup_using_tree(h, buffer, buffer_count);
+            buffer_count -= read_bits;
+            
+            //If the end of the file is reached 
+            if (read_bits == -1)
+            {
+                return;
+            }
+        }
+        else
         {
-            heap_node *current_node = h->root;
-
-            while (current_node->left != NULL || current_node->right != NULL)
-            {
-                if (buffer_count == 0)
-                {
-                    break;
-                }
-
-                uint32_t next_bit = (buffer >> (buffer_count - 1)) & 1;
-                buffer_count--;
-
-                if (next_bit == 0)
-                {
-                    current_node = current_node->left;
-                }
-                else
-                {
-                    current_node = current_node->right;
-                }
-            }
-
-            if (current_node->left == NULL && current_node->right == NULL)
-            {
-                printf("%c", current_node->c);
-            }
-            else
-            {
-                break;
-            }
+            //INLINE FUNCTION: Extract the characters from the precomputed value - and return the number of bits usedup
+            uint32_t pattern_count = extract_characters_from_pre_computed_array(pre_calulated_value, c_count);
+            buffer_count -= pattern_count;
         }
     }
 }
